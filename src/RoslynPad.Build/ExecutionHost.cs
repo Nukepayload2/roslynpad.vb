@@ -723,13 +723,16 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
                     _logger.LogWarning(ex, "Error in previous restore task");
                 }
 
-                var projBuildResult = await BuildCsproj().ConfigureAwait(false);
+                var projBuildResult = await BuildVbproj().ConfigureAwait(false);
 
                 var outputPath = Path.Combine(projBuildResult.RestorePath, "output.json");
 
                 if (!projBuildResult.MarkerExists)
                 {
-                    File.WriteAllText(Path.Combine(projBuildResult.RestorePath, "Program.vb"), "_ = 0;");
+                    File.WriteAllText(Path.Combine(projBuildResult.RestorePath, "Program.vb"), @"Module Module1
+Sub Main()
+End Sub
+End Module");
                     await BuildGlobalJson(projBuildResult.RestorePath).ConfigureAwait(false);
                     File.Copy(_parameters.NuGetConfigPath, Path.Combine(projBuildResult.RestorePath, "nuget.config"), overwrite: true);
 
@@ -839,7 +842,7 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
             await File.WriteAllTextAsync(Path.Combine(restorePath, "global.json"), globalJson, cancellationToken).ConfigureAwait(false);
         }
 
-        async Task<VbprojBuildResult> BuildCsproj()
+        async Task<VbprojBuildResult> BuildVbproj()
         {
             var csproj = MSBuildHelper.CreateVbproj(
                 Platform.TargetFrameworkMoniker,

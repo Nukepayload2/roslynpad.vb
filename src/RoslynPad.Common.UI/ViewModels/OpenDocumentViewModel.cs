@@ -22,8 +22,8 @@ namespace RoslynPad.UI;
 public class OpenDocumentViewModel : NotificationObject, IDisposable
 {
     private const string DefaultDocumentName = "New";
-    private const string RegularFileExtension = ".cs";
-    private const string ScriptFileExtension = ".csx";
+    private const string RegularFileExtension = ".vb";
+    private const string ScriptFileExtension = ".vbx";
     private const string DefaultILText = "// Run to view IL";
 
     private readonly IServiceProvider _serviceProvider;

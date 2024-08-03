@@ -12,7 +12,7 @@ public partial class DocumentViewModel : NotificationObject
 {
     internal const string AutoSaveSuffix = ".autosave";
 
-    public static ImmutableArray<string> RelevantFileExtensions { get; } = [".cs", ".csx"];
+    public static ImmutableArray<string> RelevantFileExtensions { get; } = [".vb", ".vbx"];
 
     private bool _isExpanded;
     private bool? _isAutoSaveOnly;
