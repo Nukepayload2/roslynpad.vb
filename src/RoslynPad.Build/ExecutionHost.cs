@@ -12,8 +12,8 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Mono.Cecil;
@@ -54,7 +54,7 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
     private readonly ILogger _logger;
     private readonly IAnalyzerAssemblyLoader _analyzerAssemblyLoader;
     private readonly SortedSet<LibraryRef> _libraries;
-    private readonly ImmutableArray<string> _imports;
+    private readonly ImmutableArray<GlobalImport> _imports;
     private readonly SemaphoreSlim _lock;
     private readonly SyntaxTree _scriptInitSyntax;
     private readonly SyntaxTree _moduleInitAttributeSyntax;
@@ -260,26 +260,26 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
             return false;
         }
 
-        var targetPath = Path.Combine(BuildPath, "Program.cs");
+        var targetPath = Path.Combine(BuildPath, "Program.vb");
         var code = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
-        var syntaxTree = ParseAndTransformCode(code, path, (CSharpParseOptions)_roslynHost.ParseOptions, cancellationToken: cancellationToken);
+        var syntaxTree = ParseAndTransformCode(code, path, (VisualBasicParseOptions)_roslynHost.ParseOptions, cancellationToken: cancellationToken);
         var finalCode = syntaxTree.ToString();
         if (!File.Exists(targetPath) || !string.Equals(await File.ReadAllTextAsync(targetPath, cancellationToken).ConfigureAwait(false), finalCode, StringComparison.Ordinal))
         {
             await File.WriteAllTextAsync(targetPath, finalCode, cancellationToken).ConfigureAwait(false);
         }
 
-        var csprojPath = Path.Combine(BuildPath, "program.csproj");
+        var csprojPath = Path.Combine(BuildPath, "program.vbproj");
         if (Platform.IsDotNetFramework || Platform.FrameworkVersion?.Major < 5)
         {
-            var moduleInitAttributeFile = Path.Combine(BuildPath, BuildCode.ModuleInitAttributeName + ".cs");
+            var moduleInitAttributeFile = Path.Combine(BuildPath, BuildCode.ModuleInitAttributeName + ".vb");
             if (!File.Exists(moduleInitAttributeFile))
             {
                 await File.WriteAllTextAsync(moduleInitAttributeFile, BuildCode.ModuleInitAttribute, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        var moduleInitFile = Path.Combine(BuildPath, BuildCode.ModuleInitName + ".cs");
+        var moduleInitFile = Path.Combine(BuildPath, BuildCode.ModuleInitName + ".vb");
         if (!File.Exists(moduleInitFile))
         {
             await File.WriteAllTextAsync(moduleInitFile, BuildCode.ModuleInit, cancellationToken).ConfigureAwait(false);
@@ -349,7 +349,7 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
             _parameters.WorkingDirectory,
             optimizationLevel);
 
-        var parseOptions = ((CSharpParseOptions)_roslynHost.ParseOptions).WithKind(_parameters.SourceCodeKind);
+        var parseOptions = ((VisualBasicParseOptions)_roslynHost.ParseOptions).WithKind(_parameters.SourceCodeKind);
 
         var syntaxTrees = ImmutableList.Create(ParseAndTransformCode(code, path: "", parseOptions, cancellationToken));
         if (_parameters.SourceCodeKind == SourceCodeKind.Script)
@@ -374,8 +374,7 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
             _imports,
             _parameters.WorkingDirectory,
             optimizationLevel: optimization,
-            checkOverflow: _parameters.CheckOverflow,
-            allowUnsafe: _parameters.AllowUnsafe);
+            checkOverflow: _parameters.CheckOverflow);
     }
 
     private async Task ExecuteAssemblyAsync(string assemblyPath, CancellationToken cancellationToken)
@@ -521,7 +520,7 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
         }
     }
 
-    private static SyntaxTree ParseAndTransformCode(string code, string path, CSharpParseOptions parseOptions, CancellationToken cancellationToken)
+    private static SyntaxTree ParseAndTransformCode(string code, string path, VisualBasicParseOptions parseOptions, CancellationToken cancellationToken)
     {
         var tree = SyntaxFactory.ParseSyntaxTree(code, parseOptions, path, cancellationToken: cancellationToken);
         var root = tree.GetRoot(cancellationToken);
@@ -533,23 +532,9 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
 
         // references directives are resolved by msbuild, so removing from compilation
         var nodesToRemove = compilationUnit.GetReferenceDirectives().AsEnumerable<SyntaxNode>();
-        if (parseOptions.Kind == SourceCodeKind.Regular)
-        {
-            // load directives' files are added to the compilation separately
-            nodesToRemove = nodesToRemove.Concat(compilationUnit.GetLoadDirectives());
-        }
 
         compilationUnit = compilationUnit.RemoveNodes(nodesToRemove, SyntaxRemoveOptions.KeepExteriorTrivia) ?? compilationUnit;
         var members = compilationUnit.Members;
-
-        // add .Dump() to the last bare expression
-        var lastMissingSemicolon = compilationUnit.Members.OfType<GlobalStatementSyntax>()
-            .LastOrDefault(m => m.Statement is ExpressionStatementSyntax expr && expr.SemicolonToken.IsMissing);
-        if (lastMissingSemicolon != null)
-        {
-            var statement = (ExpressionStatementSyntax)lastMissingSemicolon.Statement;
-            members = members.Replace(lastMissingSemicolon, BuildCode.GetDumpCall(statement));
-        }
 
         root = compilationUnit.WithMembers(members);
 
@@ -744,7 +729,7 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
 
                 if (!projBuildResult.MarkerExists)
                 {
-                    File.WriteAllText(Path.Combine(projBuildResult.RestorePath, "Program.cs"), "_ = 0;");
+                    File.WriteAllText(Path.Combine(projBuildResult.RestorePath, "Program.vb"), "_ = 0;");
                     await BuildGlobalJson(projBuildResult.RestorePath).ConfigureAwait(false);
                     File.Copy(_parameters.NuGetConfigPath, Path.Combine(projBuildResult.RestorePath, "nuget.config"), overwrite: true);
 
@@ -755,7 +740,7 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
 
                     var buildArgs =
                         $"--interactive -nologo " +
-                        $"-flp:errorsonly;logfile=\"{errorsPath}\" \"{projBuildResult.CsprojPath}\" " +
+                        $"-flp:errorsonly;logfile=\"{errorsPath}\" \"{projBuildResult.VbprojPath}\" " +
                         $"-getTargetResult:build -getItem:ReferencePathWithRefAssemblies,Analyzer ";
                     using var restoreResult = await ProcessUtil.RunProcessAsync(DotNetExecutable, BuildPath,
                         $"build {buildArgs}", cancellationToken).ConfigureAwait(false);
@@ -788,7 +773,7 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
                     else
                     {
                         IOUtilities.DirectoryCopy(Path.Combine(projBuildResult.RestorePath), BuildPath, overwrite: true, recursive: false);
-                        File.Delete(Path.Combine(BuildPath, "Program.cs"));
+                        File.Delete(Path.Combine(BuildPath, "Program.vb"));
                     }
 
                     await File.WriteAllTextAsync(Path.Combine(BuildPath, Path.GetFileName(projBuildResult.RestorePath)), string.Empty, cancellationToken).ConfigureAwait(false);
@@ -854,9 +839,9 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
             await File.WriteAllTextAsync(Path.Combine(restorePath, "global.json"), globalJson, cancellationToken).ConfigureAwait(false);
         }
 
-        async Task<CsprojBuildResult> BuildCsproj()
+        async Task<VbprojBuildResult> BuildCsproj()
         {
-            var csproj = MSBuildHelper.CreateCsproj(
+            var csproj = MSBuildHelper.CreateVbproj(
                 Platform.TargetFrameworkMoniker,
                 _libraries,
                 _parameters.Imports);
@@ -871,14 +856,14 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
                 var hashedRestorePath = Path.Combine(_restoreCachePath, hash);
                 Directory.CreateDirectory(hashedRestorePath);
 
-                csprojPath = Path.Combine(hashedRestorePath, "program.csproj");
+                csprojPath = Path.Combine(hashedRestorePath, "program.vbproj");
                 markerPath = Path.Combine(hashedRestorePath, ".restored");
                 _restorePath = hashedRestorePath;
                 markerExists = File.Exists(markerPath);
             }
             else
             {
-                csprojPath = Path.Combine(BuildPath, $"{Name}.csproj");
+                csprojPath = Path.Combine(BuildPath, $"{Name}.vbproj");
                 markerPath = null;
                 _restorePath = BuildPath;
                 markerExists = false;
@@ -970,7 +955,7 @@ internal partial class ExecutionHost : IExecutionHost, IDisposable
     private record BuildOutput(BuildOutputItems Items);
     private record BuildOutputItems(BuildOutputReferenceItem[] ReferencePathWithRefAssemblies, BuildOutputReferenceItem[] Analyzer);
     private record BuildOutputReferenceItem(string FullPath);
-    private record CsprojBuildResult(string RestorePath, string CsprojPath, string? MarkerPath, bool MarkerExists)
+    private record VbprojBuildResult(string RestorePath, string VbprojPath, string? MarkerPath, bool MarkerExists)
     {
         [MemberNotNullWhen(true, nameof(MarkerPath))]
         public bool UsesCache => MarkerPath is not null;

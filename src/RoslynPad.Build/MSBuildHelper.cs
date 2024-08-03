@@ -1,4 +1,5 @@
 ﻿using System.Xml.Linq;
+using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace RoslynPad.Build;
 
@@ -8,16 +9,7 @@ internal static class MSBuildHelper
     public const string AnalyzersFile = "analyzers.txt";
     private const string Sdk = "Microsoft.NET.Sdk";
 
-    public static XDocument CreateCsxCsproj(bool isDotNet, string targetFramework, IEnumerable<LibraryRef> references) =>
-        new(new XElement("Project",
-            ImportSdkProject(Sdk, "Sdk.props"),
-            BuildProperties(targetFramework, copyBuildOutput: false),
-            Reference(references),
-            ReferenceAssemblies(isDotNet),
-            ImportSdkProject(Sdk, "Sdk.targets"),
-            CoreCompileTarget()));
-
-    public static XDocument CreateCsproj(string targetFramework, IEnumerable<LibraryRef> referenceItems, IEnumerable<string> usingItems) =>
+    public static XDocument CreateVbproj(string targetFramework, IEnumerable<LibraryRef> referenceItems, IEnumerable<GlobalImport> usingItems) =>
        new(new XElement("Project",
             new XAttribute("Sdk", Sdk),
             BuildProperties(targetFramework, copyBuildOutput: true),
@@ -51,9 +43,9 @@ internal static class MSBuildHelper
         new("ItemGroup",
             compileItems.Select(c => new XElement("Compile", new XAttribute("Include", c))));
 
-    private static XElement Using(IEnumerable<string> usingItems) =>
+    private static XElement Using(IEnumerable<GlobalImport> usingItems) =>
         new("ItemGroup",
-            usingItems.Select(c => new XElement("Using", new XAttribute("Include", c))));
+            usingItems.Select(c => new XElement("Import", new XAttribute("Include", c.Name))));
 
     private static XElement BuildProperties(string targetFramework, bool copyBuildOutput) =>
         new("PropertyGroup",
