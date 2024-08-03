@@ -2,7 +2,7 @@
 
 A cross-platform VB editor based on Roslyn and AvalonEdit.
 
-It's a modified https://github.com/roslynpad/roslynpad that replaces every C# compiler usages to VB.
+It's a modified version of [roslynpad](https://github.com/roslynpad/roslynpad) that replaces every C# compiler usages with the use of VB compiler.
 
 ## Progress
 - [x] Code Fixes
@@ -16,6 +16,7 @@ It's a modified https://github.com/roslynpad/roslynpad that replaces every C# co
 - [ ] Compile and run user's code
 - [ ] Convert the source code of this project from C# to VB as much as possible
 - [ ] Publish NuGet package
+- [ ] Replace assets
 - [ ] Publish to store
 - [ ] VB Integrated Scripting Environment (ISE)
 - [ ] Add AI code completion (it's being prototyped in a private repo)
