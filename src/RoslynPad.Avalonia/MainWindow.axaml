@@ -10,7 +10,7 @@
         MinHeight="300"
         x:DataType="local:MainViewModelAvalonia"
         Title="{Binding WindowTitle, Mode=OneTime}"
-        Icon="avares://RoslynPad/Resources/RoslynPad.ico"
+        Icon="avares://RoslynPad/Resources/AnthonyVBShirt.ico"
         Name="This">
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+N"

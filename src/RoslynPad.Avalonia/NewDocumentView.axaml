@@ -21,21 +21,5 @@
                        HorizontalAlignment="Center" />
       </StackPanel>
     </Button>
-
-    <Button Padding="5"
-            Margin="20 0 0 0"
-            Background="Transparent"
-            Command="{Binding NewDocumentCommand}"
-            CommandParameter="{x:Static roslyn:SourceCodeKind.Script}">
-      <StackPanel>
-        <Image Source="{StaticResource CsFile}"
-               Width="64"
-               Height="64" />
-        <TextBlock Text="New Script&#xA;(Ctrl+Shift+N)"
-                   TextAlignment="Center"
-                   HorizontalAlignment="Center" />
-      </StackPanel>
-    </Button>
-
   </UniformGrid>
 </UserControl>

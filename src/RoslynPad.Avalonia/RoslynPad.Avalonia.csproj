@@ -6,7 +6,7 @@
     <RootNamespace>RoslynPad</RootNamespace>
     <ApplicationId>net.roslynpad</ApplicationId>
     <ApplicationTitle>RoslynPad</ApplicationTitle>
-    <ApplicationIcon>../RoslynPad/Resources/RoslynPad.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\AnthonyVBShirt.ico</ApplicationIcon>
     <Version>$(RoslynPadVersion)</Version>
     <TargetFramework Condition=" '$(IsMacBuild)' == 'true' ">$(DefaultTargetFramework)-macos</TargetFramework>
     <CopyRoslynPadRuntimeAssemblies>true</CopyRoslynPadRuntimeAssemblies>
@@ -24,6 +24,9 @@
     <MauiIcon Include="$(RepoRoot)/deploy/resources/macos/appicon.svg" />
     <AvaloniaResource Include="Resources\RoslynPad.ico" />
     <AvaloniaXaml Remove="bin\**\*.axaml;obj\**\*.axaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Resources\AnthonyVBShirt.ico" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" />
