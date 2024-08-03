@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Extensions;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Extensions;
 
 namespace RoslynPad.Roslyn.Completion.Providers;
 
@@ -11,7 +11,7 @@ internal static class DirectiveCompletionProviderUtilities
         if (tree.IsEntirelyWithinStringLiteral(position, cancellationToken))
         {
             var token = tree.GetRoot(cancellationToken).FindToken(position, findInsideTrivia: true);
-            if (token.IsKind(SyntaxKind.EndOfDirectiveToken) || token.IsKind(SyntaxKind.EndOfFileToken))
+            if (token.IsKind(SyntaxKind.EndOfInterpolatedStringToken) || token.IsKind(SyntaxKind.EndOfXmlToken) || token.IsKind(SyntaxKind.EndOfFileToken))
             {
                 token = token.GetPreviousToken(includeSkipped: true, includeDirectives: true);
             }

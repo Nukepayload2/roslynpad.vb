@@ -11,7 +11,7 @@ namespace RoslynPad.Roslyn.SignatureHelp;
 [method: ImportingConstructor]
 internal sealed class AggregateSignatureHelpProvider([ImportMany] IEnumerable<Lazy<Microsoft.CodeAnalysis.SignatureHelp.ISignatureHelpProvider, OrderableLanguageMetadata>> providers) : ISignatureHelpProvider
 {
-    private ImmutableArray<Microsoft.CodeAnalysis.SignatureHelp.ISignatureHelpProvider> _providers = providers.Where(x => x.Metadata.Language == LanguageNames.CSharp)
+    private ImmutableArray<Microsoft.CodeAnalysis.SignatureHelp.ISignatureHelpProvider> _providers = providers.Where(x => x.Metadata.Language == LanguageNames.VisualBasic)
             .Select(x => x.Value).ToImmutableArray();
 
     public bool IsTriggerCharacter(char ch)

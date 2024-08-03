@@ -40,7 +40,7 @@ internal abstract class AbstractLoadDirectiveCompletionProvider : AbstractDirect
             return;
         }
 
-        var helper = GetFileSystemCompletionHelper(context.Document, Microsoft.CodeAnalysis.Glyph.CSharpFile, [extension], s_rules);
+        var helper = GetFileSystemCompletionHelper(context.Document, Microsoft.CodeAnalysis.Glyph.BasicFile, [extension], s_rules);
         context.AddItems(await helper.GetItemsAsync(pathThroughLastSlash, context.CancellationToken).ConfigureAwait(false));
     }
 }

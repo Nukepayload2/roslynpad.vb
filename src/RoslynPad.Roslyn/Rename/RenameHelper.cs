@@ -1,8 +1,10 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Extensions.ContextQuery;
+using Microsoft.CodeAnalysis.VisualBasic.Extensions.ContextQuery;
 using Microsoft.CodeAnalysis.LanguageService;
 using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Shared.Extensions;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace RoslynPad.Roslyn.Rename;
 
@@ -65,7 +67,8 @@ public static class RenameHelper
         }
 
         if (symbol.Kind == SymbolKind.Alias && symbol.IsExtern ||
-            triggerToken.IsTypeNamedDynamic() && symbol.Kind == SymbolKind.DynamicType)
+            IsTypeNamedDynamic(triggerToken) && (symbol.Kind == SymbolKind.DynamicType || symbol.Kind == SymbolKind.NamedType) && 
+            semanticModel.OptionStrict() == OptionStrict.Off)
         {
             return null;
         }
@@ -129,5 +132,12 @@ public static class RenameHelper
         }
 
         return symbol;
+    }
+
+    private static bool IsTypeNamedDynamic(SyntaxToken token)
+    {
+        return token.Parent is IdentifierNameSyntax typedParent &&
+               SyntaxFacts.IsInTypeOnlyContext(typedParent) &&
+               token.Text == "Object";
     }
 }

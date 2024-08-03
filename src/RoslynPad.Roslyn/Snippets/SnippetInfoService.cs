@@ -9,7 +9,7 @@ public interface ISnippetInfoService
     IEnumerable<SnippetInfo> GetSnippets();
 }
 
-[ExportLanguageService(typeof(Microsoft.CodeAnalysis.Snippets.ISnippetInfoService), LanguageNames.CSharp)]
+[ExportLanguageService(typeof(Microsoft.CodeAnalysis.Snippets.ISnippetInfoService), LanguageNames.VisualBasic)]
 [method: ImportingConstructor]
 internal sealed class SnippetInfoService([Import(AllowDefault = true)] ISnippetInfoService inner) : Microsoft.CodeAnalysis.Snippets.ISnippetInfoService
 {

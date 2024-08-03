@@ -1,5 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Host.Mef;
 using RoslynPad.Roslyn.Diagnostics;
@@ -15,15 +15,15 @@ namespace RoslynPad.Roslyn;
 
 public class RoslynHost : IRoslynHost
 {
-    internal static readonly ImmutableArray<string> PreprocessorSymbols =
-        ["TRACE", "DEBUG"];
+    internal static readonly ImmutableArray<KeyValuePair<string, object>> PreprocessorSymbols =
+        [new("TRACE",true), new("DEBUG", true)];
 
     internal static readonly ImmutableArray<Assembly> DefaultCompositionAssemblies =
         [
             typeof(WorkspacesResources).Assembly,
-            typeof(CSharpWorkspaceResources).Assembly,
+            typeof(VBWorkspaceResources).Assembly,
             typeof(FeaturesResources).Assembly,
-            typeof(CSharpFeaturesResources).Assembly,
+            typeof(VBFeaturesResources).Assembly,
             typeof(RoslynHost).Assembly,
         ];
 
@@ -45,7 +45,7 @@ public class RoslynHost : IRoslynHost
     public HostServices HostServices { get; }
     public ParseOptions ParseOptions { get; }
     public ImmutableArray<MetadataReference> DefaultReferences { get; }
-    public ImmutableArray<string> DefaultImports { get; }
+    public ImmutableArray<GlobalImport> DefaultImports { get; }
     public ImmutableArray<string> DisabledDiagnostics { get; }
     public ImmutableArray<string> AnalyzerConfigFiles { get; }
 
@@ -88,9 +88,9 @@ public class RoslynHost : IRoslynHost
 
     protected virtual IEnumerable<Type> GetDefaultCompositionTypes() => DefaultCompositionTypes;
 
-    protected virtual ParseOptions CreateDefaultParseOptions() => new CSharpParseOptions(
+    protected virtual ParseOptions CreateDefaultParseOptions() => new VisualBasicParseOptions(
         preprocessorSymbols: PreprocessorSymbols,
-        languageVersion: LanguageVersion.Preview);
+        languageVersion: LanguageVersion.Latest);
 
     public MetadataReference CreateMetadataReference(string location) => MetadataReference.CreateFromFile(location,
         documentation: _documentationProviderService.GetDocumentationProvider(location));
@@ -238,9 +238,9 @@ public class RoslynHost : IRoslynHost
     {
         var loader = GetService<IAnalyzerAssemblyLoader>();
         yield return new AnalyzerFileReference(MetadataUtil.GetAssemblyPath(typeof(Compilation).Assembly), loader);
-        yield return new AnalyzerFileReference(MetadataUtil.GetAssemblyPath(typeof(CSharpResources).Assembly), loader);
+        yield return new AnalyzerFileReference(MetadataUtil.GetAssemblyPath(typeof(VBResources).Assembly), loader);
         yield return new AnalyzerFileReference(MetadataUtil.GetAssemblyPath(typeof(FeaturesResources).Assembly), loader);
-        yield return new AnalyzerFileReference(MetadataUtil.GetAssemblyPath(typeof(CSharpFeaturesResources).Assembly), loader);
+        yield return new AnalyzerFileReference(MetadataUtil.GetAssemblyPath(typeof(VBFeaturesResources).Assembly), loader);
     }
 
     public void UpdateDocument(Document document)
@@ -257,13 +257,11 @@ public class RoslynHost : IRoslynHost
 
     protected virtual CompilationOptions CreateCompilationOptions(DocumentCreationArgs args, bool addDefaultImports)
     {
-        var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-            usings: addDefaultImports ? DefaultImports : [],
-            allowUnsafe: true,
+        var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+            globalImports: addDefaultImports ? DefaultImports : [],
             sourceReferenceResolver: new SourceFileResolver([], args.WorkingDirectory),
-            // all #r references are resolved by the editor/msbuild
-            metadataReferenceResolver: DummyScriptMetadataResolver.Instance,
-            nullableContextOptions: NullableContextOptions.Enable);
+            // all #R references are resolved by the editor/msbuild
+            metadataReferenceResolver: DummyScriptMetadataResolver.Instance);
         return compilationOptions;
     }
 
@@ -299,7 +297,7 @@ public class RoslynHost : IRoslynHost
             VersionStamp.Create(),
             name,
             name,
-            LanguageNames.CSharp,
+            LanguageNames.VisualBasic,
             filePath: path,
             isSubmission: isScript,
             parseOptions: parseOptions,
@@ -310,21 +308,6 @@ public class RoslynHost : IRoslynHost
 
         var project = solution.GetProject(id)!;
 
-        if (!isScript && GetUsings(project) is { Length: > 0 } usings)
-        {
-            project = project.AddDocument("RoslynPadGeneratedUsings", usings).Project;
-        }
-
         return project;
-
-        static string GetUsings(Project project)
-        {
-            if (project.CompilationOptions is CSharpCompilationOptions options)
-            {
-                return string.Join(" ", options.Usings.Select(i => $"global using {i};"));
-            }
-
-            return string.Empty;
-        }
     }
 }

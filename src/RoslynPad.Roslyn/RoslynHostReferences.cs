@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Roslyn.Utilities;
 
 namespace RoslynPad.Roslyn;
@@ -34,7 +35,12 @@ public class RoslynHostReferences
         IEnumerable<Assembly>? assemblyReferences = null, IEnumerable<string>? assemblyPathReferences = null, IEnumerable<Type>? typeNamespaceImports = null)
     {
         var referenceLocations = _referenceLocations;
-        var importsArray = Imports.AddRange(imports!.WhereNotNull());
+        var importsParsed = imports?.WhereNotNull().Select(it => GlobalImport.Parse(it));
+        ImmutableArray<GlobalImport> importsArray = Imports;
+        if (importsParsed != null)
+        {
+            importsArray = importsArray.AddRange(importsParsed);
+        } // End If
 
         var locations =
             assemblyReferences!.WhereNotNull().Select(c => c.Location).Concat(
@@ -47,7 +53,7 @@ public class RoslynHostReferences
 
         foreach (var type in typeNamespaceImports!.WhereNotNull())
         {
-            importsArray = importsArray.Add(type!.Namespace!);
+            importsArray = importsArray.Add(GlobalImport.Parse(type!.Namespace!));
             var location = type.Assembly.Location;
             referenceLocations = referenceLocations.SetItem(location, string.Empty);
         }
@@ -61,7 +67,7 @@ public class RoslynHostReferences
     private RoslynHostReferences(
         ImmutableArray<MetadataReference> references,
         ImmutableDictionary<string, string> referenceLocations,
-        ImmutableArray<string> imports)
+        ImmutableArray<GlobalImport> imports)
     {
         _references = references;
         _referenceLocations = referenceLocations;
@@ -72,7 +78,7 @@ public class RoslynHostReferences
 
     private readonly ImmutableDictionary<string, string> _referenceLocations;
 
-    public ImmutableArray<string> Imports { get; }
+    public ImmutableArray<GlobalImport> Imports { get; }
 
     public ImmutableArray<MetadataReference> GetReferences(Func<string, DocumentationProvider>? documentationProviderFactory = null) =>
         Enumerable.Concat(_references, Enumerable.Select(_referenceLocations, c => MetadataReference.CreateFromFile(c.Key, documentation: documentationProviderFactory?.Invoke(c.Key))))

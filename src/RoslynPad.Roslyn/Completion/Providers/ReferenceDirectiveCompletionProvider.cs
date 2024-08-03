@@ -2,11 +2,11 @@
 using System.Globalization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Completion;
-using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace RoslynPad.Roslyn.Completion.Providers;
 
-[ExportCompletionProvider("ReferenceDirectiveCompletionProvider", LanguageNames.CSharp)]
+[ExportCompletionProvider("ReferenceDirectiveCompletionProvider", LanguageNames.VisualBasic)]
 [method: ImportingConstructor]
 internal class ReferenceDirectiveCompletionProvider([Import(AllowDefault = true)] INuGetCompletionProvider nuGetCompletionProvider) : AbstractReferenceDirectiveCompletionProvider
 {

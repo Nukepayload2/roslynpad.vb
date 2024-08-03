@@ -1,15 +1,15 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.Emit;
 
 namespace RoslynPad.Roslyn;
 
-internal sealed class Compiler(ImmutableList<SyntaxTree> syntaxTrees, CSharpParseOptions parseOptions,
+internal sealed class Compiler(ImmutableList<SyntaxTree> syntaxTrees, VisualBasicParseOptions parseOptions,
     OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary,
     Platform platform = Platform.AnyCpu, IEnumerable<MetadataReference>? references = null,
-    IEnumerable<string>? usings = null, string? workingDirectory = null,
+    IEnumerable<GlobalImport>? imports = null, string? workingDirectory = null,
     SourceReferenceResolver? sourceResolver = null,
     OptimizationLevel optimizationLevel = OptimizationLevel.Debug,
     bool checkOverflow = false, bool allowUnsafe = true)
@@ -22,8 +22,8 @@ internal sealed class Compiler(ImmutableList<SyntaxTree> syntaxTrees, CSharpPars
                          (workingDirectory != null
                              ? new SourceFileResolver([], workingDirectory)
                              : SourceFileResolver.Default);
-    public ImmutableArray<string> Usings { get; } = usings?.AsImmutable() ?? [];
-    public CSharpParseOptions ParseOptions { get; } = parseOptions;
+    public ImmutableArray<GlobalImport> Imports { get; } = imports?.AsImmutable() ?? [];
+    public VisualBasicParseOptions ParseOptions { get; } = parseOptions;
     public OptimizationLevel OptimizationLevel { get; } = optimizationLevel;
     public bool CheckOverflow { get; } = checkOverflow;
     public bool AllowUnsafe { get; } = allowUnsafe;
@@ -56,26 +56,23 @@ internal sealed class Compiler(ImmutableList<SyntaxTree> syntaxTrees, CSharpPars
         diagnostics.AddRange(emitResult.Diagnostics);
     }
 
-    private CSharpCompilation GetCompilationFromCode(string assemblyName)
+    private VisualBasicCompilation GetCompilationFromCode(string assemblyName)
     {
-        var compilationOptions = new CSharpCompilationOptions(
+        var compilationOptions = new VisualBasicCompilationOptions(
             OutputKind,
             mainTypeName: null,
             scriptClassName: ParseOptions.Kind == SourceCodeKind.Script ? "Program" : null,
-            usings: Usings,
+            globalImports: Imports,
             optimizationLevel: OptimizationLevel,
             checkOverflow: CheckOverflow,
-            allowUnsafe: AllowUnsafe,
             platform: Platform,
-            warningLevel: 4,
             deterministic: true,
             xmlReferenceResolver: null,
             sourceReferenceResolver: SourceResolver,
-            assemblyIdentityComparer: AssemblyIdentityComparer.Default,
-            nullableContextOptions: NullableContextOptions.Enable
+            assemblyIdentityComparer: AssemblyIdentityComparer.Default
         );
 
-        return CSharpCompilation.Create(
+        return VisualBasicCompilation.Create(
              assemblyName,
              SyntaxTrees,
              References,

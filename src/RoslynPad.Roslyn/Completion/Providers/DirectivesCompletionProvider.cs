@@ -6,10 +6,10 @@ using Microsoft.CodeAnalysis.Shared.Extensions.ContextQuery;
 
 namespace RoslynPad.Roslyn.Completion.Providers;
 
-[ExportCompletionProvider("DirectivesCompletionProvider", LanguageNames.CSharp)]
+[ExportCompletionProvider("DirectivesCompletionProvider", LanguageNames.VisualBasic)]
 internal class DirectivesCompletionProvider : CompletionProvider
 {
-    private static readonly ImmutableArray<string> s_directivesName = ["r"];
+    private static readonly ImmutableArray<string> s_directivesName = ["R"];
 
     public override async Task ProvideCompletionsAsync(CompletionContext context)
     {
