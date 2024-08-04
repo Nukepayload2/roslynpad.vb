@@ -19,16 +19,14 @@ public class RoslynHostReferences
     /// Returns namespace-only (no assemblies) defaults that fit all frameworks.
     /// </summary>
     public static RoslynHostReferences NamespaceDefault { get; } = Empty.With(imports: new[]{
+        "Microsoft.VisualBasic",
         "System",
-        "System.Threading",
-        "System.Threading.Tasks",
         "System.Collections",
         "System.Collections.Generic",
-        "System.Text",
-        "System.Text.RegularExpressions",
+        "System.Diagnostics",
         "System.Linq",
-        "System.IO",
-        "System.Reflection",
+        "System.Threading.Tasks",
+        "System.Xml.Linq",
     });
 
     public RoslynHostReferences With(IEnumerable<MetadataReference>? references = null, IEnumerable<string>? imports = null,
